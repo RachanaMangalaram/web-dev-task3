@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 8px 20px;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .task-buttons {
+            display: flex;
+            gap: 10px; /* Adjust the space between buttons */
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 20% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            max-width: 400px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>To-Do List</h1>
+        <input type="text" id="taskInput" placeholder="Add a new task">
+        <button onclick="addTask()">Add Task</button>
+        <ul id="taskList"></ul>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Edit Task</h2>
+            <input type="text" id="editTaskInput" placeholder="Enter new task name">
+            <button onclick="saveEditedTask()">Save</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            loadTasks();
+        });
+
+        function loadTasks() {
+            const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+            const taskList = document.getElementById("taskList");
+            taskList.innerHTML = "";
+            tasks.forEach(task => {
+                taskList.appendChild(createTaskElement(task));
+            });
+        }
+
+        function createTaskElement(task) {
+            const li = document.createElement("li");
+            li.innerText = task.name;
+            if (task.completed) {
+                li.classList.add("completed");
+            }
+            li.addEventListener("click", () => {
+                toggleTaskStatus(task);
+            });
+
+            const buttonContainer = document.createElement("div");
+            buttonContainer.classList.add("task-buttons");
+
+            const editButton = document.createElement("button");
+            editButton.innerText = "Edit";
+            editButton.addEventListener("click", (e) => {
+                e.stopPropagation();
+                openEditModal(task);
+            });
+
+            const deleteButton = document.createElement("button");
+            deleteButton.innerText = "Delete";
+            deleteButton.addEventListener("click", (e) => {
+                e.stopPropagation();
+                deleteTask(task);
+            });
+
+            const moveUpButton = document.createElement("button");
+            moveUpButton.innerText = "Move Up";
+            moveUpButton.addEventListener("click", (e) => {
+                e.stopPropagation();
+                moveTaskUp(task);
+            });
+
+            const moveDownButton = document.createElement("button");
+            moveDownButton.innerText = "Move Down";
+            moveDownButton.addEventListener("click", (e) => {
+                e.stopPropagation();
+                moveTaskDown(task);
+            });
+
+            buttonContainer.appendChild(editButton);
+            buttonContainer.appendChild(deleteButton);
+            buttonContainer.appendChild(moveUpButton);
+            buttonContainer.appendChild(moveDownButton);
+
+            li.appendChild(buttonContainer);
+            return li;
+        }
+
+        function addTask() {
+            const taskInput = document.getElementById("taskInput");
+            const taskName = taskInput.value.trim();
+            if (taskName === "") return;
+            const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+            const newTask = { name: taskName, completed: false };
+            tasks.push(newTask);
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+            loadTasks();
+            taskInput.value = "";
+        }
+
+        function toggleTaskStatus(task) {
+            task.completed = !task.completed;
+            const tasks = JSON.parse(localStorage.getItem("tasks"));
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+            loadTasks();
+        }
+
+        function deleteTask(task) {
+            const tasks = JSON.parse(localStorage.getItem("tasks"));
+            const index = tasks.findIndex(t => t.name === task.name);
+            if (index !== -1) {
+                tasks.splice(index, 1);
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+                loadTasks();
+            }
+        }
+
+        function moveTaskUp(task) {
+            const tasks = JSON.parse(localStorage.getItem("tasks"));
+            const index = tasks.findIndex(t => t.name === task.name);
+            if (index > 0) {
+                // Swap the task with the one above it
+                [tasks[index - 1], tasks[index]] = [tasks[index], tasks[index - 1]];
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+                loadTasks();
+            }
+        }
+
+        function moveTaskDown(task) {
+            const tasks = JSON.parse(localStorage.getItem("tasks"));
+            const index = tasks.findIndex(t => t.name === task.name);
+            if (index < tasks.length - 1) {
+                // Swap the task with the one below it
+                [tasks[index], tasks[index + 1]] = [tasks[index + 1], tasks[index]];
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+                loadTasks();
+            }
+        }
+
+        function openEditModal(task) {
+            const editTaskInput = document.getElementById("editTaskInput");
+            editTaskInput.value = task.name;
+            editTaskInput.dataset.taskName = task.name; // Store original task name in dataset
+            const editModal = document.getElementById("editModal");
+            editModal.style.display = "block";
+        }
+
+        function saveEditedTask() {
+            const editTaskInput = document.getElementById("editTaskInput");
+            const newTaskName = editTaskInput.value.trim();
+            if (newTaskName === "") return;
+            const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+            const taskIndex = tasks.findIndex(task => task.name === editTaskInput.dataset.taskName);
+            if (taskIndex !== -1) {
+                tasks[taskIndex].name = newTaskName; // Update task name without changing index
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+                loadTasks();
+                closeModal();
+            }
+        }
+
+        function closeModal() {
+            const editModal = document.getElementById("editModal");
+            editModal.style.display = "none";
+        }
+
+        // Close the modal if clicked outside of it
+        window.onclick = function(event) {
+            const editModal = document.getElementById("editModal");
+            if (event.target == editModal) {
+                editModal.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
